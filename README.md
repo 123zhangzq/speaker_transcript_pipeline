@@ -478,13 +478,87 @@ Keep `.env` private.
 
 ## 8. How to run the tool
 
-Run commands from inside the project folder:
+If you closed Terminal or PowerShell after installation, that is normal.
+
+Each time you open a new Terminal or PowerShell window, do these setup steps before running the script.
+
+### Step 1: Go to the project folder
+
+macOS / Linux:
+
+```bash
+cd ~/Desktop/transcript/speaker_transcript_pipeline
+```
+
+Windows PowerShell:
+
+```powershell
+cd "$HOME\Desktop\transcript\speaker_transcript_pipeline"
+```
+
+If your project is somewhere else, change the path.
+
+You should now be inside this folder:
 
 ```text
 speaker_transcript_pipeline/
 ```
 
-Make sure your virtual environment is activated before running the script.
+### Step 2: Activate the virtual environment
+
+macOS / Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+After activation, your command line should show `(.venv)`.
+
+If you also see `(base)` on Windows, that is okay. The important part is that you see `(.venv)`.
+
+### Step 3: Set your Hugging Face token again
+
+If you closed the old Terminal or PowerShell window, set the token again.
+
+macOS / Linux:
+
+```bash
+export HF_TOKEN="hf_xxxxxxxxxxxxxxxxx"
+```
+
+Windows PowerShell:
+
+```powershell
+$env:HF_TOKEN="hf_xxxxxxxxxxxxxxxxx"
+```
+
+Replace `hf_xxxxxxxxxxxxxxxxx` with your real token.
+
+### Step 4: Check that the token is set
+
+macOS / Linux:
+
+```bash
+echo $HF_TOKEN
+```
+
+Windows PowerShell:
+
+```powershell
+echo $env:HF_TOKEN
+```
+
+If your token appears, you are ready to run the script.
+
+### Step 5: Run one of the commands below
+
+Choose the example that matches your recording.
 
 ### Example 1: Basic command
 
@@ -869,4 +943,3 @@ python transcribe_with_speakers.py \
   --model medium \
   --compute_type int8
 ```
-
