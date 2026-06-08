@@ -1,5 +1,33 @@
 # Speaker Transcript Pipeline
 
+## README guide
+
+Use this README in order, but do not do every installation section.
+
+Sections 4, 5, and 6 are for different operating systems. Choose only the one that matches your computer:
+
+1. Use Section 4 if you are on macOS.
+2. Use Section 5 if you are on Linux or Ubuntu.
+3. Use Section 6 if you are on Windows.
+
+After installation, use Section 7 to create your Hugging Face token, then use Section 8 whenever you want to run the tool.
+
+Contents:
+
+1. What this tool does
+2. What you need before starting
+3. Folder preparation
+4. Installation on macOS
+5. Installation on Linux / Ubuntu
+6. Installation on Windows
+7. Create a Hugging Face Account and Token
+8. How to run the tool
+9. How to choose model size
+10. How to choose min_speakers and max_speakers
+11. Output files explained
+12. Manual speaker role mapping
+13. Troubleshooting
+
 ## 1. What this tool does
 
 This tool takes a video or audio recording and creates transcript files with timestamps and speaker labels such as `SPEAKER_00` and `SPEAKER_01`.
