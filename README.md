@@ -146,7 +146,19 @@ This may take several minutes. The first setup downloads large model-related pac
 
 Follow Section 7 of this README. Do this in the same Terminal window if possible.
 
-### Step 8: Run a test command
+### Step 8: Check GPU before running
+
+Run this command:
+
+```bash
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
+```
+
+If the second line says `True`, the script can use CUDA GPU mode.
+
+If the second line says `False`, the script will use CPU mode. On most Macs, this is normal.
+
+### Step 9: Run a test command
 
 Make sure your recording is in the `data` folder. For example:
 
@@ -235,7 +247,27 @@ This may take several minutes.
 
 Follow Section 7 of this README. Do this in the same Terminal window if possible.
 
-### Step 8: Run the script
+### Step 8: Check GPU before running
+
+If you have an NVIDIA GPU, first check whether Linux can see it:
+
+```bash
+nvidia-smi
+```
+
+Then check whether PyTorch can use CUDA:
+
+```bash
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO CUDA')"
+```
+
+If it prints `True` and shows your GPU name, the script can use GPU mode.
+
+If `nvidia-smi` works but PyTorch prints `False`, see Section 13.
+
+If you do not have an NVIDIA GPU, this is okay. The script will use CPU mode.
+
+### Step 9: Run the script
 
 Example:
 
@@ -355,7 +387,27 @@ If you see version information, ffmpeg is ready.
 
 Follow Section 7 of this README. Do this in the same PowerShell window if possible.
 
-### Step 9: Run the script
+### Step 9: Check GPU before running
+
+If you have an NVIDIA GPU, first check whether Windows can see it:
+
+```powershell
+nvidia-smi
+```
+
+Then check whether PyTorch can use CUDA:
+
+```powershell
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO CUDA')"
+```
+
+If it prints `True` and shows your GPU name, the script can use GPU mode.
+
+If `nvidia-smi` works but PyTorch prints `False`, see Section 13.
+
+If you do not have an NVIDIA GPU, this is okay. The script will use CPU mode.
+
+### Step 10: Run the script
 
 Example:
 
@@ -554,9 +606,47 @@ Windows PowerShell:
 echo $env:HF_TOKEN
 ```
 
-If your token appears, you are ready to run the script.
+If your token appears, the token is set. Next, check GPU availability.
 
-### Step 5: Run one of the commands below
+### Step 5: Check GPU before running
+
+If you have an NVIDIA GPU on Windows or Linux, first check whether the computer can see it:
+
+Linux with NVIDIA GPU:
+
+```bash
+nvidia-smi
+```
+
+Windows PowerShell:
+
+```powershell
+nvidia-smi
+```
+
+Then check whether PyTorch can use CUDA inside this virtual environment.
+
+macOS / Linux:
+
+```bash
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO CUDA')"
+```
+
+Windows PowerShell:
+
+```powershell
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO CUDA')"
+```
+
+If it prints `True` and shows your GPU name, the script can use GPU mode.
+
+If `nvidia-smi` works but PyTorch prints `False`, see Section 13.
+
+If you do not have an NVIDIA GPU, this is okay. The script will use CPU mode.
+
+On most Macs, CUDA GPU mode is not available. CPU mode is expected.
+
+### Step 6: Run one of the commands below
 
 Choose the example that matches your recording.
 
@@ -888,6 +978,67 @@ You can also try:
 --model small
 --compute_type int8
 ```
+
+### Problem: I have an NVIDIA GPU, but the script says CUDA GPU not detected
+
+This usually means the virtual environment installed the CPU-only version of PyTorch.
+
+First, check whether Windows can see your NVIDIA GPU:
+
+```powershell
+nvidia-smi
+```
+
+If this command works, your NVIDIA driver is visible.
+
+Look near the top of the output for `CUDA Version`.
+
+For this project, the current dependency set uses PyTorch 2.8.0. On Windows, PyTorch 2.8.0 provides CUDA packages for CUDA 12.6, 12.8, and 12.9.
+
+If `nvidia-smi` shows an older CUDA version, such as `CUDA Version: 12.2`, update your NVIDIA driver first.
+
+The easiest way on Windows is:
+
+1. Open NVIDIA App or GeForce Experience.
+2. Install the latest NVIDIA driver.
+3. Restart the computer.
+4. Open PowerShell again.
+5. Run `nvidia-smi` again.
+
+After updating, it is best if `nvidia-smi` shows `CUDA Version: 12.8` or newer.
+
+Next, check what PyTorch can see:
+
+```powershell
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
+```
+
+If the version shows `+cpu` or the second line says `False`, reinstall the CUDA version of PyTorch.
+
+Run these commands inside the activated `(.venv)` environment:
+
+```powershell
+python -m pip uninstall -y torch torchvision torchaudio
+python -m pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+```
+
+If your updated driver only shows `CUDA Version: 12.6` or `CUDA Version: 12.7`, use this command instead:
+
+```powershell
+python -m pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu126
+```
+
+Then check again:
+
+```powershell
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO CUDA')"
+```
+
+If it prints `True` and shows your GPU name, run the transcription command again.
+
+If `nvidia-smi` does not work, install or update the NVIDIA driver first.
+
+This tool needs an NVIDIA CUDA GPU for GPU mode. Intel and AMD GPUs usually do not work with this setup on Windows.
 
 ### Problem: The transcript is inaccurate
 
