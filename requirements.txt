@@ -1,0 +1,12 @@
+# Python 3.10, 3.11, 3.12, or 3.13 is recommended.
+# ffmpeg is also required, but it is installed with Homebrew, apt, or a Windows installer.
+
+whisperx==3.8.6
+faster-whisper==1.2.1
+pyannote.audio==4.0.4
+
+# These match the WhisperX 3.8.x dependency line and help pip resolve a stable set.
+torch==2.8.0
+torchaudio==2.8.0
+torchvision==0.23.0
+
