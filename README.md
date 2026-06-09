@@ -497,7 +497,7 @@ Save it somewhere private. Do not post it online.
 Open this page:
 
 ```text
-https://huggingface.co/pyannote/speaker-diarization-3.1
+https://huggingface.co/pyannote/speaker-diarization-community-1
 ```
 
 Then:
@@ -506,10 +506,10 @@ Then:
 2. Click Access repository or Agree and access repository.
 3. Accept the model terms.
 
-Newer versions of this tool may also ask for access to another related pyannote model, such as:
+Hugging Face may also ask you to accept another related pyannote model, such as:
 
 ```text
-https://huggingface.co/pyannote/speaker-diarization-community-1
+https://huggingface.co/pyannote/speaker-diarization-3.1
 ```
 
 If Hugging Face asks you to accept another related pyannote model, accept that model's terms too.
@@ -680,6 +680,8 @@ Choose the example that matches your recording.
 
 ### Example 1: Basic command
 
+Use this when you want to process one recording.
+
 macOS / Linux:
 
 ```bash
@@ -696,7 +698,65 @@ python transcribe_with_speakers.py `
   --output_dir outputs/meeting
 ```
 
-### Example 2: If you know there are 2 to 4 speakers
+### Example 2: Batch process all recordings in the data folder
+
+Use this when you want to process every supported recording file directly inside the `data` folder.
+
+macOS / Linux:
+
+```bash
+python transcribe_with_speakers.py \
+  --input data \
+  --output_dir outputs
+```
+
+Windows PowerShell:
+
+```powershell
+python transcribe_with_speakers.py `
+  --input data `
+  --output_dir outputs
+```
+
+In batch mode, each recording gets its own output folder.
+
+Example:
+
+```text
+data/
+  meeting.mp4
+  interview.m4a
+  example.wav
+
+outputs/
+  example_wav/
+    transcript_segments.json
+    transcript_readable.txt
+    transcript.srt
+    speaker_role_mapping_template.json
+  interview_m4a/
+    transcript_segments.json
+    transcript_readable.txt
+    transcript.srt
+    speaker_role_mapping_template.json
+  meeting_mp4/
+    transcript_segments.json
+    transcript_readable.txt
+    transcript.srt
+    speaker_role_mapping_template.json
+```
+
+The folder name is made from the full recording filename with dots changed to underscores.
+
+For example, `example.mp4` becomes:
+
+```text
+example_mp4
+```
+
+Batch mode processes files one at a time. On CPU, this can still be slow, but you can leave it running while it works through the folder.
+
+### Example 3: If you know there are 2 to 4 speakers
 
 macOS / Linux:
 
@@ -718,7 +778,7 @@ python transcribe_with_speakers.py `
   --max_speakers 4
 ```
 
-### Example 3: Use a smaller model for weaker computers
+### Example 4: Use a smaller model for weaker computers
 
 macOS / Linux:
 
@@ -740,7 +800,7 @@ python transcribe_with_speakers.py `
   --compute_type int8
 ```
 
-### Example 4: Chinese recording
+### Example 5: Chinese recording
 
 macOS / Linux:
 
@@ -979,12 +1039,12 @@ This usually means the token exists, but your Hugging Face account has not accep
 Open:
 
 ```text
-https://huggingface.co/pyannote/speaker-diarization-3.1
+https://huggingface.co/pyannote/speaker-diarization-community-1
 ```
 
 Make sure you are logged in. Click Access repository or Agree and access repository.
 
-If Hugging Face asks you to accept another related pyannote model, accept that too.
+If Hugging Face asks you to accept another related pyannote model, such as `pyannote/speaker-diarization-3.1`, accept that too.
 
 Also check that your token has Read permission.
 

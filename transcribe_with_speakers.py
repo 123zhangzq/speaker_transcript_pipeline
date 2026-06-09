@@ -43,7 +43,14 @@ def parse_args() -> argparse.Namespace:
             "with anonymous speaker labels."
         )
     )
-    parser.add_argument("--input", required=True, help="Path to the input recording.")
+    parser.add_argument(
+        "--input",
+        required=True,
+        help=(
+            "Path to one input recording, or a folder containing recordings to "
+            "process in batch."
+        ),
+    )
     parser.add_argument(
         "--output_dir",
         required=True,
@@ -111,25 +118,45 @@ def positive_int(value: str) -> int:
     return parsed
 
 
-def validate_input_file(input_arg: str) -> Path:
+def resolve_input_files(input_arg: str) -> tuple[list[Path], bool]:
     input_path = Path(input_arg).expanduser()
     if not input_path.exists():
         raise PipelineError(
             "Input file not found.\n\n"
             f"The file does not exist: {input_path}\n\n"
-            "What to do next: check the path after --input. If your file is in a "
-            "data folder, the path may look like data/meeting.mp4."
+            "What to do next: check the path after --input. You can pass one file, "
+            "such as data/meeting.mp4, or a folder, such as data."
         )
+
+    if input_path.is_dir():
+        input_files = sorted(
+            (
+                child
+                for child in input_path.iterdir()
+                if child.is_file() and is_supported_media_file(child)
+            ),
+            key=lambda path: path.name.lower(),
+        )
+        if not input_files:
+            supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
+            raise PipelineError(
+                "No supported recordings found.\n\n"
+                f"The folder does not contain supported recording files: {input_path}\n"
+                f"This tool supports: {supported}\n\n"
+                "What to do next: put recordings such as meeting.mp4, meeting.wav, "
+                "or interview.m4a directly inside the folder, then run again."
+            )
+        return input_files, True
 
     if not input_path.is_file():
         raise PipelineError(
-            "Input path is not a file.\n\n"
-            f"The path points to something other than a file: {input_path}\n\n"
+            "Input path is not a file or folder.\n\n"
+            f"The path points to something unsupported: {input_path}\n\n"
             "What to do next: pass the path to one recording file, such as "
-            "data/meeting.mp4."
+            "data/meeting.mp4, or a folder, such as data."
         )
 
-    if input_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+    if not is_supported_media_file(input_path):
         supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
         raise PipelineError(
             "Unsupported file format.\n\n"
@@ -139,7 +166,32 @@ def validate_input_file(input_arg: str) -> Path:
             "or choose a supported input file."
         )
 
-    return input_path
+    return [input_path], False
+
+
+def is_supported_media_file(path: Path) -> bool:
+    return path.suffix.lower() in SUPPORTED_EXTENSIONS
+
+
+def batch_output_folder_name(input_path: Path) -> str:
+    return input_path.name.replace(".", "_")
+
+
+def validate_batch_output_folder_names(input_files: list[Path]) -> None:
+    seen: dict[str, Path] = {}
+    for input_file in input_files:
+        folder_name = batch_output_folder_name(input_file)
+        if folder_name in seen:
+            raise PipelineError(
+                "Batch output folder name conflict.\n\n"
+                "Two input files would use the same output folder name after replacing "
+                "dots with underscores:\n\n"
+                f"  {seen[folder_name]}\n"
+                f"  {input_file}\n\n"
+                f"Both would write to a folder named: {folder_name}\n\n"
+                "What to do next: rename one of the input files, then run again."
+            )
+        seen[folder_name] = input_file
 
 
 def check_ffmpeg() -> None:
@@ -158,7 +210,7 @@ def check_ffmpeg() -> None:
         )
 
 
-def prepare_output_dir(output_arg: str) -> Path:
+def prepare_output_dir(output_arg: str | Path) -> Path:
     output_dir = Path(output_arg).expanduser()
     if output_dir.exists() and not output_dir.is_dir():
         raise PipelineError(
@@ -404,10 +456,10 @@ def diarize_and_assign_speakers(
                 "pyannote speaker diarization model.\n\n"
                 "What to do next:\n"
                 "1. Log in to Hugging Face using the same account that created the token.\n"
-                "2. Open https://huggingface.co/pyannote/speaker-diarization-3.1\n"
+                "2. Open https://huggingface.co/pyannote/speaker-diarization-community-1\n"
                 "3. Click Access repository or Agree and access repository.\n"
                 "4. If Hugging Face asks you to accept another related pyannote model, "
-                "accept that model too.\n"
+                "such as pyannote/speaker-diarization-3.1, accept that model too.\n"
                 "5. Make sure your token has Read permission, then run the command again.\n\n"
                 f"Technical detail: {exc}"
             ) from exc
@@ -548,24 +600,23 @@ def save_outputs(
         ) from exc
 
 
-def run() -> None:
-    args = parse_args()
-    input_path = validate_input_file(args.input)
-    check_ffmpeg()
-    output_dir = prepare_output_dir(args.output_dir)
-    load_dotenv_if_present()
-    hf_token = get_hf_token(args.hf_token)
-
-    torch, whisperx, DiarizationPipeline = import_runtime_dependencies()
-    device, compute_type = choose_device_and_compute_type(torch, args.compute_type)
-
-    if device == "cuda":
-        gpu_name = torch.cuda.get_device_name(0)
-        print(f"CUDA GPU detected: {gpu_name}")
-    else:
-        print("CUDA GPU not detected. Using CPU mode. This may be slow.")
-    print(f"Using compute type: {compute_type}")
-
+def process_recording(
+    input_path: Path,
+    output_dir: Path,
+    torch: Any,
+    whisperx: Any,
+    DiarizationPipeline: Any,
+    hf_token: str,
+    device: str,
+    compute_type: str,
+    model_name: str,
+    language: str | None,
+    min_speakers: int | None,
+    max_speakers: int | None,
+) -> None:
+    output_dir = prepare_output_dir(output_dir)
+    print(f"Input file: {input_path}")
+    print(f"Output folder: {output_dir}")
     print("Loading audio...")
     try:
         audio = whisperx.load_audio(str(input_path))
@@ -583,8 +634,8 @@ def run() -> None:
         torch,
         whisperx,
         audio,
-        model_name=args.model,
-        language=args.language,
+        model_name=model_name,
+        language=language,
         device=device,
         compute_type=compute_type,
     )
@@ -593,7 +644,7 @@ def run() -> None:
         whisperx,
         transcription_result,
         audio,
-        language=args.language,
+        language=language,
         device=device,
     )
     speaker_result = diarize_and_assign_speakers(
@@ -603,15 +654,63 @@ def run() -> None:
         audio,
         hf_token,
         device,
-        min_speakers=args.min_speakers,
-        max_speakers=args.max_speakers,
+        min_speakers=min_speakers,
+        max_speakers=max_speakers,
     )
 
     segments = normalize_speaker_segments(speaker_result.get("segments", []))
     save_outputs(segments, output_dir, recording_id=input_path.stem)
 
+
+def run() -> None:
+    args = parse_args()
+    input_files, is_batch = resolve_input_files(args.input)
+    if is_batch:
+        validate_batch_output_folder_names(input_files)
+
+    check_ffmpeg()
+    base_output_dir = prepare_output_dir(args.output_dir)
+    load_dotenv_if_present()
+    hf_token = get_hf_token(args.hf_token)
+
+    torch, whisperx, DiarizationPipeline = import_runtime_dependencies()
+    device, compute_type = choose_device_and_compute_type(torch, args.compute_type)
+
+    if device == "cuda":
+        gpu_name = torch.cuda.get_device_name(0)
+        print(f"CUDA GPU detected: {gpu_name}")
+    else:
+        print("CUDA GPU not detected. Using CPU mode. This may be slow.")
+    print(f"Using compute type: {compute_type}")
+
+    if is_batch:
+        print(f"Batch mode detected. Found {len(input_files)} supported recording(s).")
+
+    for index, input_path in enumerate(input_files, start=1):
+        if is_batch:
+            print("")
+            print(f"Processing recording {index} of {len(input_files)}: {input_path.name}")
+            output_dir = base_output_dir / batch_output_folder_name(input_path)
+        else:
+            output_dir = base_output_dir
+
+        process_recording(
+            input_path,
+            output_dir,
+            torch,
+            whisperx,
+            DiarizationPipeline,
+            hf_token,
+            device,
+            compute_type,
+            model_name=args.model,
+            language=args.language,
+            min_speakers=args.min_speakers,
+            max_speakers=args.max_speakers,
+        )
+
     print("Done.")
-    print(f"Output files saved to: {output_dir}")
+    print(f"Output files saved to: {base_output_dir}")
 
 
 def main() -> int:
