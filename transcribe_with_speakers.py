@@ -337,7 +337,12 @@ def transcribe_audio(
     model = None
 
     try:
-        model = whisperx.load_model(model_name, device, compute_type=compute_type)
+        model = whisperx.load_model(
+            model_name,
+            device,
+            compute_type=compute_type,
+            language=language,
+        )
         result = model.transcribe(audio, batch_size=batch_size, language=language)
     except Exception as exc:
         raise PipelineError(
